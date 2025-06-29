@@ -1,3 +1,4 @@
+
 // src/ChatRoom.js
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +11,8 @@ import {
   set,
   onDisconnect,
   off,
+  serverTimestamp,
+  get,
 } from "firebase/database";
 import { v4 as uuidv4 } from "uuid";
 
@@ -25,31 +28,65 @@ export default function ChatRoom({ roomCode, username }) {
   const db = database;
   const navigate = useNavigate();
 
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // User join logic
   useEffect(() => {
     const userRef = ref(db, `rooms/${roomCode}/users/${userId.current}`);
     const allUsersRef = ref(db, `rooms/${roomCode}/users`);
     const typingRef = ref(db, `rooms/${roomCode}/typing/${userId.current}`);
     const onlineRef = ref(db, `rooms/${roomCode}/online/${userId.current}`);
     const lastSeenRef = ref(db, `rooms/${roomCode}/lastSeen/${userId.current}`);
+    const joinedRef = ref(db, `rooms/${roomCode}/joined/${userId.current}`);
+    const msgRef = ref(db, `rooms/${roomCode}/messages`);
 
     set(userRef, { name: username });
     set(onlineRef, true);
     set(lastSeenRef, Date.now());
+
+    // Prevent duplicate "joined" messages
+    get(joinedRef).then((snapshot) => {
+      if (!snapshot.exists()) {
+        push(msgRef, {
+          text: `${username} joined the chat`,
+          timestamp: Date.now(),
+          senderId: "system",
+          senderName: "System",
+          isSystem: true,
+        });
+        set(joinedRef, true);
+      }
+    });
+
+    const disconnectMsgRef = push(msgRef); // for user leave
+    onDisconnect(disconnectMsgRef).set({
+      text: `${username} left the chat`,
+      timestamp: serverTimestamp(),
+      senderId: "system",
+      senderName: "System",
+      isSystem: true,
+    });
+
+    // onDisconnect actions
     onDisconnect(userRef).remove();
     onDisconnect(typingRef).remove();
     onDisconnect(onlineRef).remove();
     onDisconnect(lastSeenRef).set(Date.now());
 
+    // Track other user
     const unsubscribeUsers = onValue(allUsersRef, (snapshot) => {
       const users = snapshot.val() || {};
-      const others = Object.entries(users)
-        .filter(([key]) => key !== userId.current)
-        .map(([_, val]) => val.name);
-      setOtherUser(others[0] || "No one yet 😴");
+      const otherEntries = Object.entries(users).filter(
+        ([key]) => key !== userId.current
+      );
+      if (otherEntries.length > 0) {
+        setOtherUser(otherEntries[0][1].name);
+      } else {
+        setOtherUser("No one yet 😴");
+      }
     });
 
     return () => {
@@ -60,6 +97,7 @@ export default function ChatRoom({ roomCode, username }) {
     };
   }, [roomCode, username, db]);
 
+  // Message listener
   useEffect(() => {
     const messagesRef = ref(db, `rooms/${roomCode}/messages`);
     const unsubscribeMessages = onValue(messagesRef, (snapshot) => {
@@ -73,6 +111,7 @@ export default function ChatRoom({ roomCode, username }) {
     return () => off(messagesRef);
   }, [roomCode, db]);
 
+  // Typing indicator
   useEffect(() => {
     const typingRef = ref(db, `rooms/${roomCode}/typing`);
     return onValue(typingRef, (snapshot) => {
@@ -85,9 +124,11 @@ export default function ChatRoom({ roomCode, username }) {
     });
   }, [roomCode, db]);
 
+  // Online + last seen tracker
   useEffect(() => {
     const onlineUsersRef = ref(db, `rooms/${roomCode}/online`);
     const lastSeenRef = ref(db, `rooms/${roomCode}/lastSeen`);
+
     onValue(onlineUsersRef, (snapshot) => {
       const data = snapshot.val() || {};
       const otherOnline = Object.keys(data).find(
@@ -95,6 +136,7 @@ export default function ChatRoom({ roomCode, username }) {
       );
       setIsOnline(!!otherOnline);
     });
+
     onValue(lastSeenRef, (snapshot) => {
       const data = snapshot.val() || {};
       const otherLastSeen = Object.entries(data).find(
@@ -105,6 +147,7 @@ export default function ChatRoom({ roomCode, username }) {
     });
   }, [roomCode]);
 
+  // Send message
   const handleSend = () => {
     if (!message.trim()) return;
 
@@ -120,6 +163,7 @@ export default function ChatRoom({ roomCode, username }) {
     setMessage("");
   };
 
+  // Clear messages
   const handleClearChat = () => {
     if (window.confirm("Are you sure you want to clear the chat?")) {
       const msgRef = ref(db, `rooms/${roomCode}/messages`);
@@ -127,6 +171,7 @@ export default function ChatRoom({ roomCode, username }) {
     }
   };
 
+  // Leave room
   const handleExitRoom = () => {
     if (window.confirm("Do you want to exit the room?")) {
       navigate("/");
@@ -141,7 +186,7 @@ export default function ChatRoom({ roomCode, username }) {
             💬 Chatting with:{" "}
             <span style={{ color: "#fff" }}>{otherUser}</span>
           </h2>
-          <div style={{ fontSize: "0.8rem", color: "#ccc" }}>
+          <div style={{ fontSize: "0.8rem", color: "#fff" }}>
             {isOnline ? "🟢 Online" : `Last seen: ${lastSeen || "Unknown"}`}
           </div>
         </div>
@@ -166,6 +211,24 @@ export default function ChatRoom({ roomCode, username }) {
       <div style={styles.messages}>
         {messages.map((msg) => {
           const isOwn = msg.senderId === userId.current;
+
+          if (msg.isSystem) {
+            return (
+              <div
+                key={msg.id}
+                style={{
+                  textAlign: "center",
+                  color: "#aaa",
+                  fontSize: "0.8rem",
+                  fontStyle: "italic",
+                  margin: "5px 0",
+                }}
+              >
+                {msg.text}
+              </div>
+            );
+          }
+
           return (
             <div
               key={msg.id}
@@ -183,8 +246,7 @@ export default function ChatRoom({ roomCode, username }) {
                 style={{
                   ...styles.message,
                   alignSelf: isOwn ? "flex-end" : "flex-start",
-                  backgroundColor: isOwn ? "#2ecc71" : "#333",
-                  color: "#fff",
+                  backgroundColor: isOwn ? "#d1f7c4" : "#f1f0f0",
                 }}
               >
                 {!isOwn && (
@@ -203,12 +265,7 @@ export default function ChatRoom({ roomCode, username }) {
         })}
         {isTyping && (
           <div
-            style={{
-              fontStyle: "italic",
-              fontSize: "0.85rem",
-              marginLeft: 10,
-              color: "#aaa",
-            }}
+            style={{ fontStyle: "italic", fontSize: "0.85rem", marginLeft: 10 }}
           >
             Typing...
           </div>
@@ -254,15 +311,14 @@ const styles = {
     width: "100%",
     display: "flex",
     flexDirection: "column",
-    background: "#000",
-    color: "#fff",
+    background: "black",
     fontFamily: "Segoe UI, sans-serif",
     margin: 0,
     padding: 0,
   },
   header: {
     padding: "10px 15px",
-    backgroundColor: "#222",
+    backgroundColor: "rgba(25, 25, 25, 0.9)",
     color: "#fff",
     display: "flex",
     justifyContent: "space-between",
@@ -296,6 +352,7 @@ const styles = {
     overflowY: "auto",
     display: "flex",
     flexDirection: "column",
+    borderRadius: "30px",
     gap: "8px",
   },
   message: {
@@ -304,40 +361,38 @@ const styles = {
     borderRadius: "10px",
     fontSize: "0.9rem",
     wordBreak: "break-word",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
   },
   senderName: {
     fontWeight: "bold",
     fontSize: "0.75rem",
     marginBottom: "2px",
-    color: "#ccc",
+    color: "#444",
   },
   timestamp: {
     fontSize: "0.7rem",
-    color: "#aaa",
+    color: "#999",
     marginTop: "4px",
     textAlign: "right",
   },
   inputContainer: {
     display: "flex",
     padding: "8px",
-    borderTop: "1px solid #333",
-    backgroundColor: "#111",
+    borderTop: "1px solid #ccc",
+    backgroundColor: "#fff",
   },
   input: {
     flex: 1,
     padding: "8px",
     borderRadius: "6px",
-    border: "1px solid #444",
+    border: "1px solid #ccc",
     fontSize: "0.95rem",
-    backgroundColor: "#222",
-    color: "#fff",
   },
   sendButton: {
     marginLeft: "8px",
     padding: "8px 16px",
-    backgroundColor: "#fff",
-    color: "#000",
+    backgroundColor: "black",
+    color: "#fff",
     border: "none",
     borderRadius: "6px",
     fontWeight: "bold",
