@@ -24,7 +24,7 @@ export default function App() {
       <main style={styles.main}>
         {!joined ? (
           <div style={styles.joinContainer}>
-            <h2 style={styles.heading}>❤️ Join Chat Room ❤️</h2>
+            <h2 style={styles.heading}>🖤 Join Chat Room 🖤</h2>
 
             <input
               type="text"
@@ -63,15 +63,7 @@ export default function App() {
   );
 }
 
-// ✅ Add keyframe animation
-const styleTag = document.createElement("style");
-styleTag.innerHTML = `
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}`;
-document.head.appendChild(styleTag);
+
 
 // ✅ Inline styles
 const styles = {
@@ -80,9 +72,9 @@ const styles = {
     flexDirection: "column",
     minHeight: "100vh",
     fontFamily: "Segoe UI, sans-serif",
-    background: "linear-gradient(-45deg, #f6d365, #fda085, #a1c4fd, #c2e9fb)",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     backgroundSize: "800% 800%",
-    animation: "gradientShift 15s ease infinite",
+  
   },
   main: {
     flex: 1,
@@ -95,12 +87,12 @@ const styles = {
     textAlign: "center",
     marginBottom: "20px",
     fontSize: "1.6rem",
-    color: "#333",
+    color: "#ffffff",
   },
   joinContainer: {
     maxWidth: "400px",
     width: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
     padding: "30px 25px",
     borderRadius: "12px",
     boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
