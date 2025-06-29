@@ -141,7 +141,7 @@ export default function ChatRoom({ roomCode, username }) {
             💬 Chatting with:{" "}
             <span style={{ color: "#fff" }}>{otherUser}</span>
           </h2>
-          <div style={{ fontSize: "0.8rem", color: "#fff" }}>
+          <div style={{ fontSize: "0.8rem", color: "#ccc" }}>
             {isOnline ? "🟢 Online" : `Last seen: ${lastSeen || "Unknown"}`}
           </div>
         </div>
@@ -183,7 +183,8 @@ export default function ChatRoom({ roomCode, username }) {
                 style={{
                   ...styles.message,
                   alignSelf: isOwn ? "flex-end" : "flex-start",
-                  backgroundColor: isOwn ? "#d1f7c4" : "#f1f0f0",
+                  backgroundColor: isOwn ? "#2ecc71" : "#333",
+                  color: "#fff",
                 }}
               >
                 {!isOwn && (
@@ -202,7 +203,12 @@ export default function ChatRoom({ roomCode, username }) {
         })}
         {isTyping && (
           <div
-            style={{ fontStyle: "italic", fontSize: "0.85rem", marginLeft: 10 }}
+            style={{
+              fontStyle: "italic",
+              fontSize: "0.85rem",
+              marginLeft: 10,
+              color: "#aaa",
+            }}
           >
             Typing...
           </div>
@@ -248,14 +254,15 @@ const styles = {
     width: "100%",
     display: "flex",
     flexDirection: "column",
-    background: "#DDF7EE",
+    background: "#000",
+    color: "#fff",
     fontFamily: "Segoe UI, sans-serif",
     margin: 0,
     padding: 0,
   },
   header: {
     padding: "10px 15px",
-    backgroundColor: "#6c5ce7",
+    backgroundColor: "#222",
     color: "#fff",
     display: "flex",
     justifyContent: "space-between",
@@ -289,7 +296,6 @@ const styles = {
     overflowY: "auto",
     display: "flex",
     flexDirection: "column",
-    borderRadius: "30px",
     gap: "8px",
   },
   message: {
@@ -298,38 +304,40 @@ const styles = {
     borderRadius: "10px",
     fontSize: "0.9rem",
     wordBreak: "break-word",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
   },
   senderName: {
     fontWeight: "bold",
     fontSize: "0.75rem",
     marginBottom: "2px",
-    color: "#444",
+    color: "#ccc",
   },
   timestamp: {
     fontSize: "0.7rem",
-    color: "#999",
+    color: "#aaa",
     marginTop: "4px",
     textAlign: "right",
   },
   inputContainer: {
     display: "flex",
     padding: "8px",
-    borderTop: "1px solid #ccc",
-    backgroundColor: "#fff",
+    borderTop: "1px solid #333",
+    backgroundColor: "#111",
   },
   input: {
     flex: 1,
     padding: "8px",
     borderRadius: "6px",
-    border: "1px solid #ccc",
+    border: "1px solid #444",
     fontSize: "0.95rem",
+    backgroundColor: "#222",
+    color: "#fff",
   },
   sendButton: {
     marginLeft: "8px",
     padding: "8px 16px",
-    backgroundColor: "black",
-    color: "#fff",
+    backgroundColor: "#fff",
+    color: "#000",
     border: "none",
     borderRadius: "6px",
     fontWeight: "bold",
