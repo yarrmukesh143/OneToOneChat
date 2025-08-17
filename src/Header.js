@@ -3,14 +3,14 @@ import React from "react";
 const Header = () => {
   return (
     <header style={styles.header}>
-      <h3 style={styles.logo}>💬 One To One chat Web 💬</h3>
+      <h3 style={styles.logo}>💬 Dil Se Chats 💬</h3>
     </header>
   );
 };
 
 const styles = {
   header: {
-    backgroundColor: "darkorange",
+    backgroundColor: "black",
     color: "#fff",
     padding: "12px 20px",
     textAlign: "center",
